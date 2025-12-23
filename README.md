@@ -12,8 +12,19 @@ Brief description of the algorithm and problem being solved.
 ## Installation
 
 ### Prerequisites
+Bahasa Pemrograman & Package Manager
 - Python 3.8+
 - pip
+
+VSC Extensions
+- Jupyter
+- Jupyter Cell Tags
+- Jupyter Keymap
+- Jupyter Slide Show
+- Jupyter Notebook Renderers
+
+Dependecy
+_(Lihat di file requirements.txt)_
 
 ### Setup
 
