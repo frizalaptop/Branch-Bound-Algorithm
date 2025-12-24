@@ -1,3 +1,5 @@
+from utils import is_integer
+
 class BBNode:
     def __init__(self):
         # --- Basic node info ---
@@ -134,7 +136,7 @@ class BranchAndBound:
             return
 
         # 3. Integer solution
-        if self.is_integer_solution(node.lp_solution):
+        if is_integer(node.lp_solution):
             if node.lp_objective > self.incumbent_value:
                 self.incumbent_solution = node.lp_solution
                 self.incumbent_value = node.lp_objective
