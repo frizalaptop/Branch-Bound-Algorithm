@@ -28,19 +28,17 @@ class BBNode:
         self.right_child: "BBNode" = None
 
 
-
+"""
+Main Branch and Bound solver class.
+"""
 class BranchAndBound:
     """
-    Main Branch and Bound solver class.
+    Initialize the Branch and Bound algorithm.
+
+    Parameters:
+    - problem: an integer programming problem definition
     """
-
     def __init__(self, problem):
-        """
-        Initialize the Branch and Bound algorithm.
-
-        Parameters:
-        - problem: an integer programming problem definition
-        """
         self.problem = problem
 
         self.root = None
@@ -50,13 +48,11 @@ class BranchAndBound:
 
         self.node_counter = 0
 
+    """
+    Main Branch and Bound loop (high-level algorithm).
+    """
     def solve(self):
-        """
-        Main Branch and Bound loop (high-level algorithm).
-        """
-        # =========================
         # Step 1: Initialization
-        # =========================
         self.root = BBNode()
         self.root.id = self.node_counter
         self.root.depth = 0
@@ -67,9 +63,7 @@ class BranchAndBound:
         self.incumbent_solution = None
         self.incumbent_value = float("-inf")  # For maximization
 
-        # =========================
         # Step 2: Main Loop
-        # =========================
         while self.active_nodes:
 
             # --- Node selection ---
@@ -82,24 +76,8 @@ class BranchAndBound:
 
             # --- Fathoming checks ---
             self.check_fathom(current_node)
-
             if current_node.is_fathomed:
                 continue
-
-            # --- Check for integer solution ---
-            # (Handled conceptually inside check_fathom or here)
-            if current_node.lp_solution is not None:
-                # Placeholder for integer-solution check
-                is_integer_solution = False  # TODO
-
-                if is_integer_solution:
-                    if current_node.lp_objective > self.incumbent_value:
-                        self.incumbent_solution = current_node.lp_solution
-                        self.incumbent_value = current_node.lp_objective
-
-                    current_node.is_fathomed = True
-                    current_node.fathom_reason = "Integer solution"
-                    continue
 
             # --- Branching ---
             self.branch(current_node)
@@ -116,52 +94,70 @@ class BranchAndBound:
                 self.node_counter,
             )
 
+    """
+    Select the next node to explore.
+    Could implement DFS, BFS, or Best-First.
+    """
     def select_node(self):
-        """
-        Select the next node to explore.
-        Could implement DFS, BFS, or Best-First.
-        """
         # TODO: Select node from self.active_nodes
         pass
 
+    """
+    Solve the LP relaxation for a given node.
+    Parameters:
+    - node: BBNode
+    """
     def solve_lp(self, node):
-        """
-        Solve the LP relaxation for a given node.
-
-        Parameters:
-        - node: BBNode
-        """
+        
         # TODO: Solve LP relaxation using node constraints
         pass
 
+    """
+    Check fathoming conditions:
+    - infeasible
+    - integer solution
+    - bound worse than incumbent
+    Parameters:
+    - node: BBNode
+    """
     def check_fathom(self, node):
-        """
-        Check fathoming conditions:
-        - infeasible
-        - integer solution
-        - bound worse than incumbent
+        # 1. Infeasible LP
+        if node.lp_status == "infeasible":
+            node.is_fathomed = True
+            node.fathom_reason = "Infeasible LP"
+            return
 
-        Parameters:
-        - node: BBNode
-        """
-        # TODO: Determine whether the node should be fathomed
-        pass
+        # 2. Bound worse than incumbent
+        if node.lp_objective <= self.incumbent_value:
+            node.is_fathomed = True
+            node.fathom_reason = "Bound worse than incumbent"
+            return
 
+        # 3. Integer solution
+        if self.is_integer_solution(node.lp_solution):
+            if node.lp_objective > self.incumbent_value:
+                self.incumbent_solution = node.lp_solution
+                self.incumbent_value = node.lp_objective
+
+            node.is_fathomed = True
+            node.fathom_reason = "Integer solution"
+            return
+
+    """
+    Perform branching on a fractional variable.
+    Parameters:
+    - node: BBNode
+    """
     def branch(self, node):
-        """
-        Perform branching on a fractional variable.
-
-        Parameters:
-        - node: BBNode
-        """
         # TODO: Select branching variable
         # TODO: Create child nodes with additional constraints
         pass
 
+
+    """
+    Visualize the Branch and Bound tree.
+    Actual plotting should be implemented in visualization.py
+    """
     def visualize_tree(self):
-        """
-        Visualize the Branch and Bound tree.
-        Actual plotting should be implemented in visualization.py
-        """
         # TODO: Call visualization utilities
         pass
