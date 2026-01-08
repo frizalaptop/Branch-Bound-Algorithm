@@ -1,4 +1,5 @@
 import math
+import pulp
 from utils import is_integer
 
 class BBNode:
@@ -90,149 +91,49 @@ class BranchAndBound:
             )
 
     def solve_lp(self, node):
-        """
-        Solve LP relaxation untuk maximization.
-        Constraints format: (coeff_dict, sense, rhs)
-        sense: "<=" or ">="
-        """
-        variables = self.problem["variables"]
-        obj_coeff = self.problem["objective"]
-        
-        # Gabungkan semua constraints
-        all_constraints = []
-        
-        # 1. Base constraints dari problem
-        for lhs, sense, rhs in self.problem["constraints"]:
-            all_constraints.append((lhs, sense, rhs))
-            
-        # 2. Constraints dari branching
-        for (var, sense, value) in node.constraints:
-            all_constraints.append(({var: 1.0}, sense, value))
-            
-        # 3. Non-negativity constraints (implisit x ≥ 0)
-        # Ini akan ditangani oleh lower bound default 0
-        
-        # Konversi ke bentuk standar (<=)
-        standard_constraints = []
-        for lhs, sense, rhs in all_constraints:
-            if sense == "<=":
-                standard_constraints.append((lhs, rhs))
-            elif sense == ">=":
-                # Kalikan dengan -1 untuk konversi ke <=
-                new_lhs = {k: -v for k, v in lhs.items()}
-                standard_constraints.append((new_lhs, -rhs))
-                
-        n_vars = len(variables)
-        n_constraints = len(standard_constraints)
-        
-        # Buat indeks untuk variabel
-        var_index = {var: i for i, var in enumerate(variables)}
-        
-        # Inisialisasi tableau: (n_constraints + 1) x (n_vars + n_constraints + 1)
-        tableau = [[0.0] * (n_vars + n_constraints + 1) for _ in range(n_constraints + 1)]
-        
-        # 1. Isi constraint rows
-        for i in range(n_constraints):
-            lhs, rhs = standard_constraints[i]
-            # Koefisien variabel asli
-            for var, coeff in lhs.items():
-                j = var_index[var]
-                tableau[i][j] = coeff
-            # Slack variable (1 di kolomnya)
-            tableau[i][n_vars + i] = 1.0
-            # RHS
-            tableau[i][-1] = rhs
-            
-        # 2. Isi objective row (MAXIMIZATION: kita akan maximize c^T x)
-        # Di tableau simplex standar, row terakhir adalah -c untuk maximization
-        for j, var in enumerate(variables):
-            tableau[-1][j] = -obj_coeff.get(var, 0.0)  # Negatif karena kita maximize
-        
-        # 3. Pastikan RHS non-negatif (untuk fase I sederhana)
-        for i in range(n_constraints):
-            if tableau[i][-1] < -1e-9:
-                # Kalau RHS negatif, kalikan seluruh row dengan -1
-                for j in range(len(tableau[i])):
-                    tableau[i][j] = -tableau[i][j]
-        
-        # 4. Simpleks iterasi (dengan Bland's rule)
-        EPS = 1e-9
-        MAX_ITER = 1000
-        iter_count = 0
-        
-        def pivot(pivot_row, pivot_col):
-            pivot_val = tableau[pivot_row][pivot_col]
-            # Normalize pivot row
-            for j in range(len(tableau[pivot_row])):
-                tableau[pivot_row][j] /= pivot_val
-                
-            # Eliminate pivot column dari rows lain
-            for i in range(len(tableau)):
-                if i != pivot_row:
-                    factor = tableau[i][pivot_col]
-                    for j in range(len(tableau[i])):
-                        tableau[i][j] -= factor * tableau[pivot_row][j]
-        
-        while True:
-            iter_count += 1
-            if iter_count > MAX_ITER:
+            variables = self.problem["variables"]
+            obj_coeff = self.problem["objective"]
+
+            # 1. Definisikan problem LP (MAX)
+            prob = pulp.LpProblem("LP_relaxation", pulp.LpMaximize)
+
+            # 2. Definisikan variabel (continuous, >= 0)
+            lp_vars = {
+                v: pulp.LpVariable(v, lowBound=0, cat="Continuous")
+                for v in variables
+            }
+
+            # 3. Objective
+            prob += pulp.lpSum(obj_coeff[v] * lp_vars[v] for v in variables)
+
+            # 4. Base constraints
+            for lhs, sense, rhs in self.problem["constraints"]:
+                expr = pulp.lpSum(lhs[v] * lp_vars[v] for v in lhs)
+                if sense == "<=":
+                    prob += expr <= rhs
+                elif sense == ">=":
+                    prob += expr >= rhs
+
+            # 5. Branching constraints
+            for var, sense, value in node.constraints:
+                if sense == "<=":
+                    prob += lp_vars[var] <= value
+                elif sense == ">=":
+                    prob += lp_vars[var] >= value
+
+            # 6. Solve
+            status = prob.solve(pulp.PULP_CBC_CMD(msg=False))
+
+            if status != pulp.LpStatusOptimal:
                 node.lp_status = "infeasible"
                 return
-                
-            # Cari entering variable (most negative di objective row)
-            entering_col = None
-            min_val = 0
-            for j in range(n_vars + n_constraints):
-                if tableau[-1][j] < min_val - EPS:
-                    min_val = tableau[-1][j]
-                    entering_col = j
-                    
-            if entering_col is None:
-                break  # Optimal
-                
-            # Minimum ratio test
-            min_ratio = float('inf')
-            pivot_row = None
-            for i in range(n_constraints):
-                if tableau[i][entering_col] > EPS:
-                    ratio = tableau[i][-1] / tableau[i][entering_col]
-                    if ratio < min_ratio - EPS:
-                        min_ratio = ratio
-                        pivot_row = i
-                        
-            if pivot_row is None:
-                node.lp_status = "unbounded"
-                return
-                
-            pivot(pivot_row, entering_col)
-            
-        # 5. Ekstrak solusi
-        solution = {var: 0.0 for var in variables}
-        objective_value = 0.0
-        
-        # Untuk setiap variable asli
-        for j, var in enumerate(variables):
-            # Cek jika ini basic variable
-            col = [tableau[i][j] for i in range(n_constraints)]
-            # Basic variable punya tepat satu 1 dan lainnya 0
-            if sum(abs(val) for val in col) > 1 + EPS:
-                continue
-                
-            one_count = sum(1 for val in col if abs(val - 1.0) < EPS)
-            zero_count = sum(1 for val in col if abs(val) < EPS)
-            
-            if one_count == 1 and zero_count == n_constraints - 1:
-                pivot_row = next(i for i in range(n_constraints) if abs(tableau[i][j] - 1.0) < EPS)
-                solution[var] = tableau[pivot_row][-1]
-                
-            objective_value += obj_coeff.get(var, 0.0) * solution[var]
-            
-        node.lp_solution = solution
-        node.lp_objective = objective_value
-        node.lp_status = "optimal"
-        
-        # Debug output
-        print(f"Node {node.id}: LP solution = {solution}, objective = {objective_value}")
+
+            # 7. Extract solution
+            node.lp_solution = {v: lp_vars[v].value() for v in variables}
+            node.lp_objective = pulp.value(prob.objective)
+            node.lp_status = "optimal"
+
+            print(f"Node {node.id}: LP solution = {node.lp_solution}, objective = {node.lp_objective}")
 
     def check_fathom(self, node):
         # 1. Infeasible LP
