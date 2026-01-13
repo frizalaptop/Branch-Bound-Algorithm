@@ -1,19 +1,32 @@
 markdown
-# [Nama Algoritma] - Riset Operasi
+# Branch & Bound - Riset Operasi
 
 ## Deskripsi
-Brief description of the algorithm and problem being solved.
+Branch and Bound merupakan algoritma untuk memecahkan masalah optimasi bilangan bulat. Studi kasus untuk Minimalisasi Rute Pengiriman Logistik untuk korban bencana banjir di Sumatera Utara.
 
 ## Team Members
-- Nama 1 (NPM) - Role
-- Nama 2 (NPM) - Role
-- Nama 3 (NPM) - Role
+- Muhammad Hafid Aridwan (220511118) - Role
+- Muhammad Putra Rizki Julianto (220511080) - Role
+- Muhammad Friza Gustiadi Pratama (220511017) - Role
 
 ## Installation
 
 ### Prerequisites
+Bahasa Pemrograman & Package Manager
 - Python 3.8+
 - pip
+- Visual Studio Code
+- Git
+
+VSC Extensions
+- Jupyter
+- Jupyter Cell Tags
+- Jupyter Keymap
+- Jupyter Slide Show
+- Jupyter Notebook Renderers
+
+Dependecy
+_(Lihat di file requirements.txt)_
 
 ### Setup
 
