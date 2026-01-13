@@ -52,9 +52,9 @@ class BranchAndBound:
         self.root.parent = None
         self.active_nodes.append(self.root)
         
-        # Untuk maximization, incumbent_value mulai dari -∞
+        # Untuk minimization, incumbent_value mulai dari +∞
         self.incumbent_solution = None
-        self.incumbent_value = float("-inf")
+        self.incumbent_value = float("inf")
 
         # Step 2: Main Loop
         while self.active_nodes:
@@ -95,7 +95,7 @@ class BranchAndBound:
             obj_coeff = self.problem["objective"]
 
             # 1. Definisikan problem LP (MAX)
-            prob = pulp.LpProblem("LP_relaxation", pulp.LpMaximize)
+            prob = pulp.LpProblem("LP_relaxation", pulp.LpMinimize   )
 
             # 2. Definisikan variabel (continuous, >= 0)
             lp_vars = {
@@ -141,11 +141,11 @@ class BranchAndBound:
             node.is_fathomed = True
             node.fathom_reason = "Infeasible or unbounded LP"
             return
-            
-        # 2. Bound worse than incumbent (untuk maximization)
-        if node.lp_objective <= self.incumbent_value + 1e-9:
+
+        # 2. Bound better than incumbent (untuk minimization)
+        if node.lp_objective >= self.incumbent_value - 1e-9:
             node.is_fathomed = True
-            node.fathom_reason = "Bound worse than incumbent"
+            node.fathom_reason = "Bound better than incumbent"
             return
             
         # 3. Integer solution check
@@ -156,8 +156,8 @@ class BranchAndBound:
                 break
                 
         if all_integer:
-            # Update incumbent jika lebih baik
-            if node.lp_objective > self.incumbent_value:
+            # Update incumbent jika lebih buruk
+            if node.lp_objective < self.incumbent_value:
                 self.incumbent_solution = {
                     k: round(v) for k, v in node.lp_solution.items()
                 }
@@ -216,15 +216,3 @@ class BranchAndBound:
     def _node_signature(self, node):
         # sort supaya canonical
         return tuple(sorted(node.constraints))
-
-# Input Asumptions:
-# problem = {
-#     "objective": {"x1": 3, "x2": 2},   # max 3x1 + 2x2
-#     "constraints": [
-#         ({"x1": 2, "x2": 1}, "<=", 18),
-#         ({"x1": 2, "x2": 3}, "<=", 42),
-#         ({"x1": 3, "x2": 1}, "<=", 24),
-#     ],
-#     "variables": ["x1", "x2"]
-# }
-
