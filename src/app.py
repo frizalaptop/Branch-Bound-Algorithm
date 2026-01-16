@@ -92,16 +92,16 @@ total_time_available = st.number_input(
 # =========================
 st.divider()
 
-if st.button("🚀 Generate & Solve Problem"):
+if st.button("Hitung Keuntungan Maksimum"):
     if len(items) != num_items:
         st.error("⚠️ Semua barang harus memiliki nama.")
     else:
         problem, var_map = build_problem(items, total_time_available)
 
-        st.success("Problem berhasil dibuat!")
+        st.success("Hasil didapatkan!")
 
-        st.subheader("📌 Problem Dictionary")
-        st.code(problem, language="python")
+        # st.subheader("📌 Problem Dictionary")
+        # st.code(problem, language="python")
 
         # =========================
         # Jalankan Branch & Bound
@@ -110,11 +110,11 @@ if st.button("🚀 Generate & Solve Problem"):
         solution, value, nodes = solver.solve()
 
         st.subheader("✅ Hasil Optimasi (Integer Solution)")
-        st.write(f"**Nilai objektif maksimum:** {value}")
-        st.write(f"**Jumlah node dieksplorasi:** {nodes}")
+        st.write(f"**Keuntungan Maksimum:** {value}")
+        # st.write(f"**Jumlah node dieksplorasi:** {nodes}")
 
-        st.subheader("📦 Solusi dalam Variabel Internal")
-        st.code(solution, language="python")
+        # st.subheader("📦 Solusi dalam Variabel Internal")
+        # st.code(solution, language="python")
 
         # =========================
         # Konversi ke nama barang
@@ -123,5 +123,5 @@ if st.button("🚀 Generate & Solve Problem"):
         for item_name, var in var_map.items():
             readable_solution[item_name] = solution.get(var, 0)
 
-        st.subheader("🧾 Solusi dalam Nama Barang")
+        st.subheader("🧾 Solusi Penjualan Produk")
         st.code(readable_solution, language="python")
