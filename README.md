@@ -17,6 +17,8 @@ Bahasa Pemrograman & Package Manager
 - pip
 - Visual Studio Code
 - Git
+- pulp
+- streamlit
 
 VSC Extensions
 - Jupyter
@@ -29,12 +31,14 @@ Dependecy
 _(Lihat di file requirements.txt)_
 
 ### Setup
-
 ```bash
 pip install -r requirements.txt
 ```
 
 ## Usage
+```bash
+python -m streamlit run src/app.py
+```
 
 ### Running the Algorithm
 ```bash
