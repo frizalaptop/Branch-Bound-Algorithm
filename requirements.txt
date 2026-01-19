@@ -2,3 +2,5 @@ numpy
 pandas
 matplotlib
 pytest
+openpyxl
+xlrd
